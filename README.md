@@ -2,8 +2,6 @@
 
 ![SA3 NMEA Relay application screenshot](image.png)
 
-User manual · Sailaway 3 NMEA Gateway Bridge
-
 ## What is SA3 NMEA Relay?
 
 SA3 NMEA Relay bridges the **Sailaway 3** sailing simulator's built-in NMEA gateway to navigation software such as **OpenCPN** or **qtVlm**. Sailaway outputs NMEA 0183 sentences over a local TCP connection; this app receives them, applies corrections for compatibility with standard chart plotters, and re-broadcasts the corrected stream over a second TCP port.
