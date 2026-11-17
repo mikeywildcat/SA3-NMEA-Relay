@@ -77,7 +77,7 @@ jobs:
             /f $certPath `
             /p $env:WINDOWS_CERT_PASSWORD `
             /d "SA3 NMEA Relay" `
-            /du "https://github.com/mikeywildcat/SA3connect" `
+            /du "https://github.com/mikeywildcat/SA3-NMEA-Relay" `
             dist\SA3NMEARelay.exe
 
           # Clean up certificate file
