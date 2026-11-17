@@ -4,7 +4,7 @@ build-backend = "setuptools.backends.legacy:build"
 
 [project]
 name = "sa3-nmea-relay"
-version = "1.0.0"
+version = "1.0.5"
 description = "Lightweight NMEA relay bridge for Sailaway 3 — corrects proprietary sentences and relays via TCP"
 requires-python = ">=3.11"
 dependencies = [

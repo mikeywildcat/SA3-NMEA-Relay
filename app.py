@@ -25,7 +25,6 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QMenu,
     QMenuBar,
-    QMessageBox,
     QPlainTextEdit,
     QSizePolicy,
     QSplitter,
@@ -54,7 +53,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("SA3 NMEA Relay")
-        self.resize(1120, 600)
+        self.resize(1280, 820)
+        self.setMinimumSize(1040, 700)
 
         # Runtime state
         self._tcp_worker: Optional[TcpWorker] = None
@@ -66,7 +66,7 @@ class MainWindow(QMainWindow):
         self._log_lines: deque = deque(maxlen=_LOG_MAX_LINES)  # (timestamp, text)
         self._was_connected = False      # True once a session is established
         self._manual_disconnect = False  # True when user clicks Disconnect
-        self._auto_retry_timer: Optional[QTimer] = None  # retries during startup auto-connect
+        self._auto_retry_timer: Optional[QTimer] = None  # retries while Auto Connect is enabled
 
         self._build_ui()
         self._connect_signals()
@@ -82,14 +82,11 @@ class MainWindow(QMainWindow):
         self._status_timer.timeout.connect(self._refresh_status_bar)
         self._status_timer.start(1000)
 
-        # Auto-connect on startup if configured
+        # Auto-connect on startup if configured. Keep this timer alive after a
+        # successful connection so it can resume if Sailaway later disconnects.
         if self.conn_panel.is_auto_connect():
             QTimer.singleShot(400, self.conn_panel.btn_connect.click)
-            # Arm the retry timer — will keep retrying until connected
-            self._auto_retry_timer = QTimer(self)
-            self._auto_retry_timer.setInterval(10_000)  # retry every 10 s
-            self._auto_retry_timer.timeout.connect(self._auto_retry_connect)
-            self._auto_retry_timer.start()
+            self._ensure_auto_retry()
 
         # Auto-relay on startup if configured
         if self.conn_panel.is_auto_relay():
@@ -124,27 +121,29 @@ class MainWindow(QMainWindow):
         self.lbl_relayed = QLabel(tr("stat_relayed", n=0))
         self.lbl_boat_id = QLabel(tr("stat_boat_id_none"))
         for lbl in (self.lbl_rx, self.lbl_relayed, self.lbl_boat_id):
-            lbl.setStyleSheet("color: #888; font-size: 9pt;")
+            lbl.setObjectName("statBadge")
             stats_row.addWidget(lbl)
         stats_row.addStretch()
         right_layout.addLayout(stats_row)
 
         # Received and adjusted outgoing NMEA displays
-        displays = QSplitter(Qt.Orientation.Horizontal)
+        displays = QSplitter(Qt.Orientation.Vertical)
+        displays.setChildrenCollapsible(False)
+        displays.setHandleWidth(6)
 
         received_panel = QWidget()
         received_layout = QVBoxLayout(received_panel)
         received_layout.setContentsMargins(0, 0, 0, 0)
         received_layout.setSpacing(3)
         self.lbl_received_title = QLabel(tr("nmea_received_title"))
-        self.lbl_received_title.setStyleSheet("color: #cdd6f4; font-weight: bold;")
+        self.lbl_received_title.setObjectName("nmeaHeading")
         received_layout.addWidget(self.lbl_received_title)
 
         self.log_viewer = QPlainTextEdit()
         self.log_viewer.setReadOnly(True)
         self.log_viewer.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
         self.log_viewer.setMaximumBlockCount(_LOG_MAX_LINES)
-        self._style_nmea_view(self.log_viewer, "#a6e3a1")
+        self._style_nmea_view(self.log_viewer, "#f4f7fa")
         received_layout.addWidget(self.log_viewer)
 
         outgoing_panel = QWidget()
@@ -152,20 +151,21 @@ class MainWindow(QMainWindow):
         outgoing_layout.setContentsMargins(0, 0, 0, 0)
         outgoing_layout.setSpacing(3)
         self.lbl_outgoing_title = QLabel(tr("nmea_outgoing_title"))
-        self.lbl_outgoing_title.setStyleSheet("color: #cdd6f4; font-weight: bold;")
+        self.lbl_outgoing_title.setObjectName("nmeaHeading")
         outgoing_layout.addWidget(self.lbl_outgoing_title)
 
         self.outgoing_viewer = QTextEdit()
         self.outgoing_viewer.setReadOnly(True)
         self.outgoing_viewer.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
         self.outgoing_viewer.document().setMaximumBlockCount(_LOG_MAX_LINES)
-        self._style_nmea_view(self.outgoing_viewer, "#a6e3a1")
+        self._style_nmea_view(self.outgoing_viewer, "#f4f7fa")
         outgoing_layout.addWidget(self.outgoing_viewer)
 
         displays.addWidget(received_panel)
         displays.addWidget(outgoing_panel)
         displays.setStretchFactor(0, 1)
         displays.setStretchFactor(1, 1)
+        displays.setSizes([1, 1])
         right_layout.addWidget(displays)
 
         # Splitter
@@ -174,20 +174,32 @@ class MainWindow(QMainWindow):
         splitter.addWidget(right)
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
-        splitter.setSizes([280, 840])
+        splitter.setSizes([360, 840])
 
         root.addWidget(splitter)
 
         # Status bar
         self.setStatusBar(QStatusBar())
         self.lbl_conn_status = QLabel(tr("status_disconnected"))
-        self.lbl_conn_status.setStyleSheet("color: #f38ba8;")
+        self.lbl_conn_status.setStyleSheet("color: #fb7185;")
         self.statusBar().addWidget(self.lbl_conn_status)
 
         self.setStyleSheet(
-            "QMainWindow { background-color: #1e1e2e; }"
-            "QSplitter::handle { background-color: #45475a; width: 2px; }"
-            "QStatusBar { background-color: #181825; color: #a6adc8; font-size: 9pt; }"
+            "QMainWindow { background-color: #202225; }"
+            "QMenuBar { background: #303236; color: #f2f2f3; border-bottom: 1px solid #414348; }"
+            "QMenuBar::item { padding: 6px 10px; background: transparent; }"
+            "QMenuBar::item:selected { background: #4a4d52; border-radius: 7px; }"
+            "QMenu { background: #303236; color: #f2f2f3; border: 1px solid #4a4d52; }"
+            "QMenu::item { padding: 6px 24px; }"
+            "QMenu::item:selected { background: #0a84ff; }"
+            "QSplitter::handle { background-color: #3a3c40; }"
+            "QSplitter::handle:horizontal { width: 5px; }"
+            "QSplitter::handle:vertical { height: 5px; }"
+            "QStatusBar { background-color: #292b2f; color: #d7d7d9; font-size: 9pt; border-top: 1px solid #3d3f43; }"
+            "QLabel#statBadge { background: #303236; color: #e5e5e6; border: 1px solid #45474b; "
+            "border-radius: 8px; padding: 4px 9px; font-size: 9pt; }"
+            "QLabel#nmeaHeading { color: #f1f1f2; font-size: 10pt; font-weight: 600; "
+            "padding: 5px 8px; background: #2b2d31; border: 1px solid #424448; border-radius: 7px; }"
         )
 
         # Menu bar – File menu
@@ -198,15 +210,16 @@ class MainWindow(QMainWindow):
 
         # Menu bar – Help menu
         help_menu = menu_bar.addMenu(tr("menu_help"))
-        act_manual = help_menu.addAction(tr("menu_help_manual"))
+        act_manual = help_menu.addAction(tr("user_manual"))
         act_manual.triggered.connect(self.open_help)
 
     @staticmethod
     def _style_nmea_view(view, text_color: str):
         view.setStyleSheet(
-            f"background-color: #11111b; color: {text_color}; "
+            f"background-color: #111214; color: {text_color}; "
             "font-family: 'Menlo', 'Consolas', 'Courier New', monospace; "
-            "font-size: 9pt; border: 1px solid #45475a; border-radius: 4px;"
+            "font-size: 10pt; border: 1px solid #424448; border-radius: 7px; "
+            "selection-background-color: #0a84ff; selection-color: #ffffff; padding: 6px;"
         )
 
     # ------------------------------------------------------------------
@@ -216,8 +229,10 @@ class MainWindow(QMainWindow):
     def _connect_signals(self):
         self.conn_panel.connect_clicked.connect(self._on_connect)
         self.conn_panel.disconnect_clicked.connect(self._on_disconnect)
+        self.conn_panel.auto_connect_changed.connect(self._on_auto_connect_changed)
         self.conn_panel.tcp_relay_toggle.connect(self._on_relay_toggle)
         self.conn_panel.language_changed.connect(self._on_language_changed)
+        self.conn_panel.user_manual_clicked.connect(self.open_help)
 
     # ------------------------------------------------------------------
     # Connection management
@@ -226,6 +241,11 @@ class MainWindow(QMainWindow):
     def _on_connect(self, host: str, port: int):
         if self._tcp_worker is not None:
             return  # already connected
+
+        self._tray.set_sailaway_state("connecting")
+
+        if self.conn_panel.is_auto_connect():
+            self._ensure_auto_retry()
 
         self._tcp_thread = QThread()
         self._tcp_worker = TcpWorker(host, port)
@@ -239,13 +259,32 @@ class MainWindow(QMainWindow):
 
         self._tcp_thread.start()
         self.lbl_conn_status.setText(tr("status_connecting", host=host, port=port))
-        self.lbl_conn_status.setStyleSheet("color: #f9e2af;")
+        self.lbl_conn_status.setStyleSheet("color: #fbbf24;")
         self.conn_panel.update_connection_status(False)
 
     def _auto_retry_connect(self):
-        """Retry connect automatically — only while not yet connected."""
+        """Retry connect automatically while Auto Connect is enabled."""
+        if not self.conn_panel.is_auto_connect():
+            self._stop_auto_retry()
+            return
         if self._tcp_worker is None and not self._manual_disconnect:
             self.conn_panel.btn_connect.click()
+
+    def _ensure_auto_retry(self):
+        if self._auto_retry_timer is None:
+            self._auto_retry_timer = QTimer(self)
+            self._auto_retry_timer.setInterval(10_000)
+            self._auto_retry_timer.timeout.connect(self._auto_retry_connect)
+        if not self._auto_retry_timer.isActive():
+            self._auto_retry_timer.start()
+
+    def _on_auto_connect_changed(self, enabled: bool):
+        if enabled:
+            self._ensure_auto_retry()
+            if self._tcp_worker is None and not self._manual_disconnect:
+                self._auto_retry_connect()
+        else:
+            self._stop_auto_retry()
 
     def _stop_auto_retry(self):
         if self._auto_retry_timer is not None:
@@ -262,9 +301,9 @@ class MainWindow(QMainWindow):
     def _on_connected(self, host: str, port: int):
         self._was_connected = True
         self._manual_disconnect = False
-        self._stop_auto_retry()  # successfully connected — no more retries
+        self._tray.set_sailaway_state("connected")
         self.lbl_conn_status.setText(tr("status_connected", host=host, port=port))
-        self.lbl_conn_status.setStyleSheet("color: #a6e3a1;")
+        self.lbl_conn_status.setStyleSheet("color: #34d399;")
         self.conn_panel.update_connection_status(True)
         self.conn_panel.record_success_host(host)
         self.conn_panel.record_success_port(port)
@@ -276,9 +315,9 @@ class MainWindow(QMainWindow):
             )
 
     def _on_disconnect(self):
+        self._manual_disconnect = True
+        self._stop_auto_retry()  # user clicked Disconnect — cancel retries
         if self._tcp_worker:
-            self._manual_disconnect = True
-            self._stop_auto_retry()  # user clicked Disconnect — cancel retries
             self._tcp_worker.stop()
 
     def _on_disconnected(self):
@@ -288,7 +327,7 @@ class MainWindow(QMainWindow):
         self._manual_disconnect = False
 
         self.lbl_conn_status.setText(tr("status_disconnected"))
-        self.lbl_conn_status.setStyleSheet("color: #f38ba8;")
+        self.lbl_conn_status.setStyleSheet("color: #fb7185;")
         self.conn_panel.update_connection_status(False)
         if self._tcp_thread:
             self._tcp_thread.quit()
@@ -297,27 +336,30 @@ class MainWindow(QMainWindow):
         self._tcp_thread = None
         self._log(tr("log_disconnected"))
 
-        if was_connected and not manual:
-            self._show_connection_lost_popup()
+        auto_retrying = self.conn_panel.is_auto_connect() and not manual
+        if auto_retrying:
+            self._tray.set_sailaway_state("connecting")
+            self._ensure_auto_retry()
+            self.lbl_conn_status.setText(tr("status_reconnecting"))
+            self.lbl_conn_status.setStyleSheet("color: #fbbf24;")
+        else:
+            self._tray.set_sailaway_state("disconnected")
 
-    def _show_connection_lost_popup(self):
-        dlg = QMessageBox(self)
-        dlg.setWindowTitle(tr("conn_lost_title"))
-        dlg.setIcon(QMessageBox.Icon.Warning)
-        dlg.setText(tr("conn_lost_msg"))
-        dlg.setStandardButtons(QMessageBox.StandardButton.Ok)
-        dlg.setStyleSheet(
-            "QMessageBox { background-color: #1e1e2e; color: #cdd6f4; }"
-            "QLabel { color: #cdd6f4; font-size: 10pt; }"
-            "QPushButton { background:#89b4fa; color:#1e1e2e; border-radius:5px;"
-            " padding:5px 20px; font-weight:bold; }"
-            "QPushButton:hover { background:#b4befe; }"
-        )
-        dlg.exec()
+        if was_connected and not manual:
+            if not auto_retrying:
+                self.lbl_conn_status.setText(tr("status_disconnected"))
+            if self._tray.is_available():
+                message = (
+                    tr("notif_connection_lost_msg")
+                    if auto_retrying
+                    else tr("notif_connection_lost_manual_msg")
+                )
+                self._tray.show_notification(tr("notif_connection_lost_title"), message)
 
     def _on_connect_error(self, msg: str):
+        self._tray.set_sailaway_state("disconnected")
         self.lbl_conn_status.setText(tr("status_error", msg=msg[:60]))
-        self.lbl_conn_status.setStyleSheet("color: #f38ba8;")
+        self.lbl_conn_status.setStyleSheet("color: #fb7185;")
         self.conn_panel.update_connection_status(False)
         self._log(tr("log_error", msg=msg))
 
@@ -341,11 +383,14 @@ class MainWindow(QMainWindow):
                 pass
 
         # Correct and optionally relay
-        corrected = correct_sentence(stripped, self._own_boat_id)
-        self._append_outgoing(stripped, corrected)
+        corrected = correct_sentence(
+            stripped,
+            self._own_boat_id,
+            invert_heel=self.conn_panel.chk_invert_heel.isChecked(),
+        )
         if corrected is not None:
             if self._relay and self._relay.running:
-                self._relay.send_sentence(corrected)
+                self._relay.send_sentence(corrected, received=stripped)
                 self._relayed_count += 1
 
         # Append to log viewer (show original with possible conversion note)
@@ -360,14 +405,14 @@ class MainWindow(QMainWindow):
             cursor.insertBlock()
 
         normal_format = QTextCharFormat()
-        normal_format.setForeground(QColor("#a6e3a1"))
+        normal_format.setForeground(QColor("#f4f7fa"))
         changed_format = QTextCharFormat(normal_format)
-        changed_format.setForeground(QColor("#1e1e2e"))
-        changed_format.setBackground(QColor("#f9e2af"))
+        changed_format.setForeground(QColor("#ffffff"))
+        changed_format.setBackground(QColor("#075fc4"))
 
         if corrected is None:
             filtered_format = QTextCharFormat(normal_format)
-            filtered_format.setForeground(QColor("#f9e2af"))
+            filtered_format.setForeground(QColor("#ffffff"))
             cursor.insertText("[filtered] ", filtered_format)
             cursor.insertText(received, normal_format)
         else:
@@ -426,6 +471,8 @@ class MainWindow(QMainWindow):
         self.lbl_relayed.setText(tr("stat_relayed", n=self._relayed_count))
         self.lbl_received_title.setText(tr("nmea_received_title"))
         self.lbl_outgoing_title.setText(tr("nmea_outgoing_title"))
+        self._tray.refresh_status()
+        self._tray.refresh_language()
         if self._own_boat_id:
             self.lbl_boat_id.setText(tr("stat_boat_id", bid=self._own_boat_id))
         else:
@@ -435,7 +482,7 @@ class MainWindow(QMainWindow):
         if mb.actions():
             mb.actions()[0].setText(tr("menu_help"))
             if mb.actions()[0].menu() and mb.actions()[0].menu().actions():
-                mb.actions()[0].menu().actions()[0].setText(tr("menu_help_manual"))
+                mb.actions()[0].menu().actions()[0].setText(tr("user_manual"))
 
     # ------------------------------------------------------------------
     # TCP relay management
@@ -455,7 +502,8 @@ class MainWindow(QMainWindow):
         self._relay = TCPRelay(host, port)
         self._relay.status_changed.connect(self.conn_panel.update_tcp_relay_status)
         self._relay.error_occurred.connect(self._on_relay_error)
-        self._relay.client_count_changed.connect(self.conn_panel.update_tcp_client_count)
+        self._relay.client_count_changed.connect(self._on_relay_client_count_changed)
+        self._relay.sentence_sent.connect(self._append_outgoing)
         # Track unexpected exits so self._relay is always cleared when the thread dies.
         self._relay.finished.connect(self._on_relay_thread_finished)
         self._relay.start()
@@ -469,7 +517,11 @@ class MainWindow(QMainWindow):
         """
         if self._relay is not None:
             self._relay = None
-            self.conn_panel.update_tcp_client_count(0)
+            self._on_relay_client_count_changed(0)
+
+    def _on_relay_client_count_changed(self, count: int):
+        self.conn_panel.update_tcp_client_count(count)
+        self._tray.set_client_count(count)
 
     def _on_relay_error(self, msg: str):
         self.conn_panel.update_tcp_relay_error(msg)

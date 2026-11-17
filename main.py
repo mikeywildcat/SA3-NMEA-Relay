@@ -55,14 +55,14 @@ def _pick_language_on_first_run(app, icon_file: str) -> None:
         heading_row.addWidget(icon_lbl)
     heading_row.addSpacing(12)
     title_lbl = QLabel("SA3 NMEA Relay")
-    title_lbl.setStyleSheet("font-size: 16pt; font-weight: bold; color: #cdd6f4;")
+    title_lbl.setStyleSheet("font-size: 16pt; font-weight: bold; color: #f2f2f3;")
     heading_row.addWidget(title_lbl)
     heading_row.addStretch()
     layout.addLayout(heading_row)
 
     sub_lbl = QLabel("Select your language / Sélectionnez votre langue\n"
                       "Sprache wählen / Selecteer uw taal")
-    sub_lbl.setStyleSheet("color: #a6adc8; font-size: 9pt;")
+    sub_lbl.setStyleSheet("color: #b9b9bc; font-size: 9pt;")
     sub_lbl.setWordWrap(True)
     layout.addWidget(sub_lbl)
 
@@ -74,10 +74,10 @@ def _pick_language_on_first_run(app, icon_file: str) -> None:
     grid = QGridLayout()
     grid.setSpacing(8)
     btn_style = (
-        "QPushButton { background:#313244; color:#cdd6f4; border:1px solid #45475a;"
-        " border-radius:6px; font-size:10pt; padding:6px 12px; }"
-        "QPushButton:checked { background:#89b4fa; color:#1e1e2e; border:1px solid #89b4fa; }"
-        "QPushButton:hover:!checked { background:#45475a; }"
+        "QPushButton { background:#34363a; color:#f2f2f3; border:1px solid #484a4e;"
+        " border-radius:8px; font-size:10pt; padding:7px 12px; }"
+        "QPushButton:checked { background:#0a84ff; color:#ffffff; border:1px solid #0a84ff; }"
+        "QPushButton:hover:!checked { background:#414348; }"
     )
     for i, (code, name) in enumerate(LANGUAGE_NAMES.items()):
         btn = QPushButton(name)
@@ -95,14 +95,14 @@ def _pick_language_on_first_run(app, icon_file: str) -> None:
     ok_btn = QPushButton("OK")
     ok_btn.setFixedHeight(38)
     ok_btn.setStyleSheet(
-        "QPushButton { background:#89b4fa; color:#1e1e2e; border-radius:6px;"
+        "QPushButton { background:#0a84ff; color:#ffffff; border-radius:8px;"
         " font-size:11pt; font-weight:bold; }"
-        "QPushButton:hover { background:#b4befe; }"
+        "QPushButton:hover { background:#3194ff; }"
     )
     ok_btn.clicked.connect(dialog.accept)
     layout.addWidget(ok_btn)
 
-    dialog.setStyleSheet("QDialog { background-color: #1e1e2e; }")
+    dialog.setStyleSheet("QDialog { background-color: #25272a; }")
 
     dialog.exec()
 

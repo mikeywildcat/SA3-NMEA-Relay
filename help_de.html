@@ -166,7 +166,7 @@
         <li>
           <div class="step-body">
             <div class="step-title">TCP-Relay starten</div>
-            <div class="step-desc">Wechseln Sie zum Reiter <strong>TCP-Relay</strong>. Der Host ist auf <code>0.0.0.0</code> voreingestellt, der Standardport ist <code>10111</code>. Klicken Sie auf <strong>Relay starten</strong>.</div>
+            <div class="step-desc">Wechseln Sie zum Reiter <strong>TCP-Relay</strong>. Der Host ist auf <code>0.0.0.0</code> voreingestellt, der Standardport ist <code>10111</code>. Klicken Sie auf <strong>Relay starten</strong>. Wenn die Krängung in Ihrer Navigationssoftware in die falsche Richtung angezeigt wird (ältere qtVlm-Versionen benötigen dies möglicherweise), aktivieren Sie unter dem Port <strong>Vorzeichen der Krängung umkehren</strong>.</div>
           </div>
         </li>
         <li>
@@ -192,10 +192,10 @@
       <p><strong>Verbinden</strong> öffnet den TCP-Socket zu Sailaway. Bei Erfolg wird die Statusleiste grün. Bei einem Fehler wird dieser in Rot angezeigt.</p>
       <p><strong>Trennen</strong> schließt den Socket sauber. Der Relay-Server läuft weiter.</p>
       <h3>Auto-Verbinden</h3>
-      <p>Wenn aktiviert, versucht die App bei jedem Start automatisch eine Verbindung herzustellen. Falls Sailaway noch nicht läuft, wird alle <strong>10 Sekunden</strong> ein stiller Verbindungsversuch wiederholt, bis er gelingt.</p>
+      <p>Wenn aktiviert, versucht die App bei jedem Start automatisch eine Verbindung herzustellen. Falls Sailaway noch nicht läuft, wird alle <strong>10 Sekunden</strong> ein Verbindungsversuch wiederholt, bis er gelingt. Wird eine bestehende Verbindung unerwartet unterbrochen oder trifft 10 Sekunden lang kein vollständiger NMEA-Satz ein, erscheint eine Benachrichtigung und die App versucht alle 10 Sekunden erneut, die Verbindung herzustellen. Deaktivieren Sie Auto-Verbinden oder klicken Sie auf <strong>Trennen</strong>, um die Versuche zu beenden.</p>
       <div class="info-box tip">
         <strong>Tipp</strong>
-        <span>Wenn die Verbindung unerwartet abbricht, erscheint ein Pop-up-Hinweis, der Sie auffordert, Sailaway zu überprüfen und die Verbindung manuell wiederherzustellen.</span>
+        <span>Bei einem Verbindungsverlust erscheint eine einmalige Benachrichtigung. Nach erfolgreicher Wiederherstellung werden Sie erneut benachrichtigt.</span>
       </div>
     </section>
 
@@ -203,6 +203,8 @@
       <h2>Reiter TCP-Relay</h2>
       <h3>Relay-Host &amp; Port</h3>
       <p><code>0.0.0.0</code> macht das Relay von jedem Gerät im lokalen Netzwerk erreichbar. Ändern Sie auf <code>127.0.0.1</code>, um es auf den lokalen Rechner zu beschränken. Der Standardport ist <code>10111</code>.</p>
+      <h3>Vorzeichen der Krängung</h3>
+      <p>Das Kontrollkästchen <strong>Vorzeichen der Krängung umkehren</strong> befindet sich direkt unter dem Relay-Port und ist standardmäßig deaktiviert. Dabei werden positive Werte negativ und negative positiv; die Backbord-/Steuerbord-Konvention wird also umgekehrt. Ältere qtVlm-Versionen benötigen dies möglicherweise. Die Einstellung wird gespeichert und kann bei laufendem Relay geändert werden. Bewegen Sie den Mauszeiger über das Kontrollkästchen, um den Tooltip anzuzeigen.</p>
       <h3>Relay starten / stoppen</h3>
       <p><strong>Relay starten</strong> öffnet den lauschenden Server. Mehrere Navigations-Apps können sich gleichzeitig verbinden – die Client-Anzahl wird angezeigt.</p>
       <h3>Auto-Relay</h3>
@@ -221,7 +223,7 @@
           <tr><th>Eingabe-Satz</th><th>Ausgabe-Satz</th><th>Beschreibung</th></tr>
         </thead>
         <tbody>
-          <tr><td>$SLCLI</td><td>$IIXDR,A,…,D,ROLL</td><td>Sailaway-Krängungswinkel → Standard-XDR-Transducer-Satz. Das Vorzeichen wird zur Einhaltung der Konvention umgekehrt.</td></tr>
+          <tr><td>$SLCLI</td><td>$IIXDR,A,…,D,ROLL</td><td>Sailaway-Krängungswinkel → Standard-XDR-Transducer-Satz. Die Vorzeichenumkehr ist standardmäßig deaktiviert und kann in den TCP-Relay-Einstellungen aktiviert werden.</td></tr>
           <tr><td>$RIRSA</td><td>$IIRSA</td><td>Sailaway-Ruderwinkel → Standard-RSA-Satz mit korrigiertem Talker-ID <code>II</code>.</td></tr>
           <tr><td>$WIMWV</td><td>$WIMWV (korrigiert)</td><td>Windwinkelwerte über 180° werden als negative Werte (±180° vorzeichenbehaftet) umgeschrieben, um die Kompatibilität mit OpenCPN zu gewährleisten.</td></tr>
           <tr><td>AIS-VDM-Sätze</td><td><em>(verworfen)</em></td><td>AIS-Positionsmeldungen des eigenen Bootes werden aus dem Datenstrom entfernt, damit das eigene Schiff nicht als separates AIS-Ziel erscheint.</td></tr>
@@ -236,10 +238,18 @@
     <section id="tray">
       <h2>Menüleiste &amp; Infobereich</h2>
       <p>SA3 NMEA Relay befindet sich in der macOS-Menüleiste oder im Windows-Infobereich. Das Schließen des Hauptfensters blendet es aus, anstatt die App zu beenden – das Relay läuft weiter im Hintergrund.</p>
+      <h3>Symbol lesen</h3>
+      <p>Das Symbol verwendet das App-Logo: Die Bootsfarbe zeigt den Sailaway-Verbindungsstatus, der Hintergrund zeigt, ob ein Relay-Client verbunden ist. Bewegen Sie den Mauszeiger über das Symbol oder öffnen Sie das Menü, um die genaue Client-Anzahl zu sehen.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0 20px">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center"><svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Grünes Boot auf blauem Hintergrund"><rect x="2" y="2" width="60" height="60" rx="16" fill="#3899f9"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#27d17f"/></svg><div style="font-size:12px;color:var(--subtext)">Sailaway verbunden · Client verbunden</div></div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center"><svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Gelbes Boot auf blauem Hintergrund"><rect x="2" y="2" width="60" height="60" rx="16" fill="#3899f9"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#ffc247"/></svg><div style="font-size:12px;color:var(--subtext)">Sailaway verbindet sich erneut · Client verbunden</div></div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center"><svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Rotes Boot auf blauem Hintergrund"><rect x="2" y="2" width="60" height="60" rx="16" fill="#3899f9"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#ff5b64"/></svg><div style="font-size:12px;color:var(--subtext)">Sailaway getrennt · Client verbunden</div></div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center"><svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Grünes Boot auf anthrazitfarbenem Hintergrund"><rect x="2" y="2" width="60" height="60" rx="16" fill="#343a42"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#27d17f"/></svg><div style="font-size:12px;color:var(--subtext)">Sailaway verbunden · kein Client verbunden</div></div>
+      </div>
       <h3>Menüoptionen</h3>
       <ul style="list-style:disc;padding-left:20px;color:var(--subtext);font-size:13px;line-height:2">
         <li><strong style="color:var(--text)">Ausblenden / Anzeigen</strong> – blendet das Hauptfenster ein oder aus</li>
-        <li><strong style="color:var(--text)">Nur Menüleiste / Infobereich</strong> – blendet das Dock-Symbol (macOS) dauerhaft aus; das Fenster startet bei jedem Launch ausgeblendet</li>
+        <li><strong style="color:var(--text)">Nur Menüleiste / Infobereich</strong> – wenn aktiviert, startet das Fenster bei jedem Launch ausgeblendet. Diese Einstellung wird gespeichert und gilt ab dem nächsten Start; mit <strong>Ausblenden / Anzeigen</strong> können Sie das Fenster sofort aus- oder einblenden. Unter macOS bleibt das Dock-Symbol während der Ausführung verborgen; öffnen Sie das Fenster über das Menüleisten-Symbol.</li>
         <li><strong style="color:var(--text)">Bei Anmeldung starten</strong> – siehe unten</li>
         <li><strong style="color:var(--text)">Hilfe</strong> – öffnet dieses Handbuch</li>
         <li><strong style="color:var(--text)">Beenden</strong> – schließt die App vollständig</li>
@@ -283,14 +293,14 @@
         <li>Stellen Sie sicher, dass Ihre App auf <code>127.0.0.1</code> Port <code>10111</code> konfiguriert ist.</li>
         <li>Prüfen Sie das NMEA-Protokollfenster – wenn Sätze scrollen, empfängt das Relay Daten.</li>
       </ul>
-      <h3>„Verbindung unterbrochen"-Pop-up erscheint wiederholt</h3>
+      <h3>Automatische Verbindungsversuche laufen weiter</h3>
       <ul style="list-style:disc;padding-left:20px;color:var(--subtext);font-size:13px;line-height:2">
-        <li>Dies weist darauf hin, dass Sailaway das NMEA-Gateway schließt. Prüfen Sie, ob Sailaway läuft und das Gateway aktiviert ist.</li>
-        <li>Aktivieren Sie Auto-Verbinden, damit die App nach einem Neustart von Sailaway automatisch wieder verbindet.</li>
+        <li>Prüfen Sie, ob Sailaway läuft und das NMEA-Gateway aktiviert ist.</li>
+        <li>Deaktivieren Sie Auto-Verbinden oder klicken Sie auf <strong>Trennen</strong>, um die Versuche zu beenden.</li>
       </ul>
       <h3>Dock-Symbol verschwindet nicht (macOS)</h3>
       <ul style="list-style:disc;padding-left:20px;color:var(--subtext);font-size:13px;line-height:2">
-        <li>Aktivieren Sie <strong>Nur Menüleiste / Infobereich</strong> im Kontextmenü des Tray-Symbols für dauerhaften Betrieb ohne Dock-Symbol.</li>
+        <li>Beenden Sie ältere Versionen und starten Sie die aktualisierte Mac-App. Sie ist so konfiguriert, dass sie über die Menüleiste ohne Dock-Symbol läuft.</li>
       </ul>
       <div class="info-box note">
         <strong>Protokollfenster</strong>

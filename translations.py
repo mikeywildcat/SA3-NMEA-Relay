@@ -87,10 +87,10 @@ _STRINGS: dict[str, dict[str, str]] = {
         "nl": "Auto-verbinden AAN",
     },
     "auto_connect_tooltip": {
-        "en": "Automatically connects to the last host/port on startup.",
-        "fr": "Se connecte automatiquement au dernier hôte/port au démarrage.",
-        "de": "Verbindet beim Start automatisch mit dem letzten Host/Port.",
-        "nl": "Maakt automatisch verbinding met de laatste host/poort bij opstarten.",
+        "en": "Connects to the last host/port on startup and retries every 10 seconds after an unexpected disconnection.",
+        "fr": "Se connecte au dernier hôte/port au démarrage et réessaie toutes les 10 secondes après une déconnexion inattendue.",
+        "de": "Verbindet beim Start mit dem letzten Host/Port und versucht nach einer unerwarteten Unterbrechung alle 10 Sekunden erneut, eine Verbindung herzustellen.",
+        "nl": "Maakt bij het opstarten verbinding met de laatste host/poort en probeert na een onverwachte verbreking elke 10 seconden opnieuw verbinding te maken.",
     },
     "connection_help": {
         "en": (
@@ -150,6 +150,12 @@ _STRINGS: dict[str, dict[str, str]] = {
         "de": "Verbunden  {host}:{port}",
         "nl": "Verbonden  {host}:{port}",
     },
+    "status_reconnecting": {
+        "en": "Reconnecting automatically…",
+        "fr": "Reconnexion automatique…",
+        "de": "Automatische Wiederverbindung…",
+        "nl": "Automatisch opnieuw verbinden…",
+    },
     "status_error": {
         "en": "Error: {msg}",
         "fr": "Erreur : {msg}",
@@ -167,18 +173,6 @@ _STRINGS: dict[str, dict[str, str]] = {
         "fr": "# Déconnecté",
         "de": "# Getrennt",
         "nl": "# Verbroken",
-    },
-    "conn_lost_title": {
-        "en": "Connection Lost",
-        "fr": "Connexion perdue",
-        "de": "Verbindung unterbrochen",
-        "nl": "Verbinding verbroken",
-    },
-    "conn_lost_msg": {
-        "en": "Connection lost. Please check Sailaway is running and reconnect with the Connect button.",
-        "fr": "Connexion perdue. Veuillez vérifier que Sailaway est en cours d'exécution et reconnectez-vous avec le bouton Connecter.",
-        "de": "Verbindung unterbrochen. Bitte prüfen Sie, ob Sailaway läuft, und stellen Sie die Verbindung mit dem Verbinden-Schaltfläche wieder her.",
-        "nl": "Verbinding verbroken. Controleer of Sailaway actief is en maak opnieuw verbinding via de knop Verbinden.",
     },
     "log_error": {
         "en": "# Error: {msg}",
@@ -249,6 +243,18 @@ _STRINGS: dict[str, dict[str, str]] = {
         "fr": "Port :",
         "de": "Port:",
         "nl": "Poort:",
+    },
+    "invert_heel_sign": {
+        "en": "Invert heel sign",
+        "fr": "Inverser le signe de l'inclinaison",
+        "de": "Vorzeichen der Krängung umkehren",
+        "nl": "Teken van helling omkeren",
+    },
+    "invert_heel_sign_tooltip": {
+        "en": "When enabled, the relay reverses the sign of Sailaway heel values in the outgoing XDR sentence. Uncheck to preserve the original sign.",
+        "fr": "Activé, le relais inverse le signe des valeurs d'inclinaison Sailaway dans la phrase XDR sortante. Désactivez pour conserver le signe d'origine.",
+        "de": "Wenn aktiviert, kehrt das Relay das Vorzeichen der Sailaway-Krängungswerte im ausgehenden XDR-Satz um. Deaktivieren, um das ursprüngliche Vorzeichen beizubehalten.",
+        "nl": "Als dit is ingeschakeld, keert de relay het teken van Sailaway-hellingswaarden in de uitgaande XDR-zin om. Schakel dit uit om het oorspronkelijke teken te behouden.",
     },
     "auto_relay": {
         "en": "Auto Relay",
@@ -354,6 +360,48 @@ _STRINGS: dict[str, dict[str, str]] = {
     },
 
     # ---- Tray menu ----
+    "user_manual": {
+        "en": "User Manual",
+        "fr": "Manuel utilisateur",
+        "de": "Benutzerhandbuch",
+        "nl": "Gebruikershandleiding",
+    },
+    "tray_sailaway_connected": {
+        "en": "Connected",
+        "fr": "Connecté",
+        "de": "Verbunden",
+        "nl": "Verbonden",
+    },
+    "tray_sailaway_connecting": {
+        "en": "Connecting / reconnecting",
+        "fr": "Connexion / reconnexion",
+        "de": "Verbindung / Wiederverbindung",
+        "nl": "Verbinden / opnieuw verbinden",
+    },
+    "tray_sailaway_disconnected": {
+        "en": "Disconnected",
+        "fr": "Déconnecté",
+        "de": "Getrennt",
+        "nl": "Verbroken",
+    },
+    "tray_sailaway_status": {
+        "en": "Sailaway: {status}",
+        "fr": "Sailaway : {status}",
+        "de": "Sailaway: {status}",
+        "nl": "Sailaway: {status}",
+    },
+    "tray_client_count": {
+        "en": "Relay clients: {n}",
+        "fr": "Clients du relais : {n}",
+        "de": "Relay-Clients: {n}",
+        "nl": "Relay-clients: {n}",
+    },
+    "tray_status_tooltip": {
+        "en": "SA3 NMEA Relay · Sailaway: {sailaway} · Relay clients: {clients}",
+        "fr": "SA3 NMEA Relay · Sailaway : {sailaway} · Clients du relais : {clients}",
+        "de": "SA3 NMEA Relay · Sailaway: {sailaway} · Relay-Clients: {clients}",
+        "nl": "SA3 NMEA Relay · Sailaway: {sailaway} · Relay-clients: {clients}",
+    },
     "tray_hide": {
         "en": "Hide",
         "fr": "Masquer",
@@ -385,10 +433,10 @@ _STRINGS: dict[str, dict[str, str]] = {
         "nl": "Alleen menubalk / systeemvak",
     },
     "tray_help": {
-        "en": "Help",
-        "fr": "Aide",
-        "de": "Hilfe",
-        "nl": "Help",
+        "en": "User Manual",
+        "fr": "Manuel utilisateur",
+        "de": "Benutzerhandbuch",
+        "nl": "Gebruikershandleiding",
     },
     "menu_file": {
         "en": "File",
@@ -409,10 +457,10 @@ _STRINGS: dict[str, dict[str, str]] = {
         "nl": "Help",
     },
     "menu_help_manual": {
-        "en": "Open Manual",
-        "fr": "Ouvrir le manuel",
-        "de": "Handbuch öffnen",
-        "nl": "Handleiding openen",
+        "en": "User Manual",
+        "fr": "Manuel utilisateur",
+        "de": "Benutzerhandbuch",
+        "nl": "Gebruikershandleiding",
     },
     "notif_running_title": {
         "en": "SA3 NMEA Relay",
@@ -437,6 +485,24 @@ _STRINGS: dict[str, dict[str, str]] = {
         "fr": "Connecté à Sailaway sur {host}:{port}",
         "de": "Mit Sailaway verbunden: {host}:{port}",
         "nl": "Verbonden met Sailaway op {host}:{port}",
+    },
+    "notif_connection_lost_title": {
+        "en": "Sailaway Connection Lost",
+        "fr": "Connexion Sailaway perdue",
+        "de": "Sailaway-Verbindung verloren",
+        "nl": "Sailaway-verbinding verbroken",
+    },
+    "notif_connection_lost_msg": {
+        "en": "The connection was lost. SA3 NMEA Relay will retry automatically every 10 seconds.",
+        "fr": "La connexion a été perdue. SA3 NMEA Relay réessaiera automatiquement toutes les 10 secondes.",
+        "de": "Die Verbindung wurde unterbrochen. SA3 NMEA Relay versucht alle 10 Sekunden automatisch erneut, die Verbindung herzustellen.",
+        "nl": "De verbinding is verbroken. SA3 NMEA Relay probeert elke 10 seconden automatisch opnieuw verbinding te maken.",
+    },
+    "notif_connection_lost_manual_msg": {
+        "en": "The connection was lost. Check Sailaway and reconnect with the Connect button.",
+        "fr": "La connexion a été perdue. Vérifiez Sailaway et reconnectez-vous avec le bouton Connecter.",
+        "de": "Die Verbindung wurde unterbrochen. Prüfen Sie Sailaway und stellen Sie die Verbindung über die Schaltfläche Verbinden wieder her.",
+        "nl": "De verbinding is verbroken. Controleer Sailaway en maak opnieuw verbinding met de knop Verbinden.",
     },
 }
 

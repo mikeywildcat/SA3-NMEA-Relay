@@ -20,6 +20,7 @@ class TCPRelay(QThread):
     status_changed = pyqtSignal(bool, str)    # (active, message)
     error_occurred = pyqtSignal(str)
     client_count_changed = pyqtSignal(int)
+    sentence_sent = pyqtSignal(str, str)  # (received sentence, outgoing sentence)
 
     def __init__(self, host: str = "0.0.0.0", port: int = 10111, parent=None):
         super().__init__(parent)
@@ -29,7 +30,9 @@ class TCPRelay(QThread):
         self.server_socket = None
         self.clients: List[socket.socket] = []
         self.clients_lock = threading.Lock()
-        self._send_queue: queue.Queue = queue.Queue(maxsize=1000)
+        self._send_queue: queue.Queue[
+            tuple[str, list[tuple[str, str]]] | None
+        ] = queue.Queue(maxsize=1000)
 
     # ------------------------------------------------------------------
     # QThread entry point
@@ -74,22 +77,24 @@ class TCPRelay(QThread):
     # Send helpers (thread-safe)
     # ------------------------------------------------------------------
 
-    def send_sentence(self, sentence: str):
+    def send_sentence(self, sentence: str, received: str | None = None):
         """Queue a single NMEA sentence (with or without trailing CRLF)."""
         if not sentence or not self.running:
             return
         if not sentence.endswith("\n"):
             sentence += "\r\n"
-        self._enqueue(sentence)
+        source = received if received is not None else sentence
+        self._enqueue((sentence, [(source, sentence)]))
 
     def send_sentences(self, sentences: List[str]):
         """Queue multiple NMEA sentences at once."""
         if not sentences or not self.running:
             return
         data = "\r\n".join(sentences) + "\r\n"
-        self._enqueue(data)
+        items = [(sentence, sentence) for sentence in sentences]
+        self._enqueue((data, items))
 
-    def _enqueue(self, data: str):
+    def _enqueue(self, data: tuple[str, list[tuple[str, str]]]):
         try:
             self._send_queue.put_nowait(data)
         except queue.Full:
@@ -106,15 +111,18 @@ class TCPRelay(QThread):
     def _sender_loop(self):
         while self.running:
             try:
-                data = self._send_queue.get(timeout=0.1)
-                if data is None:
+                queued = self._send_queue.get(timeout=0.1)
+                if queued is None:
                     break
+                data, sentences = queued
                 data_bytes = data.encode("ascii", errors="ignore")
+                sent_to_client = False
                 with self.clients_lock:
                     disconnected = []
                     for client in self.clients:
                         try:
                             client.sendall(data_bytes)
+                            sent_to_client = True
                         except Exception:
                             disconnected.append(client)
                     for client in disconnected:
@@ -125,6 +133,9 @@ class TCPRelay(QThread):
                         self.clients.remove(client)
                     if disconnected:
                         self.client_count_changed.emit(len(self.clients))
+                if sent_to_client:
+                    for received, outgoing in sentences:
+                        self.sentence_sent.emit(received, outgoing)
             except queue.Empty:
                 continue
             except Exception as exc:

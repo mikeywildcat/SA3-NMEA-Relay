@@ -14,7 +14,7 @@ Cross-platform — runs on **macOS** and **Windows**.  Apple Hardened Runtime en
 
 | Received from Sailaway | Relayed as | Notes |
 |---|---|---|
-| `$SLCLI,<heel>` | `$IIXDR,A,<heel>,D,ROLL*XX` | Sign inverted (Sailaway +port → NMEA −port) |
+| `$SLCLI,<heel>` | `$IIXDR,A,<heel>,D,ROLL*XX` | Sign inversion is off by default and can be enabled in the TCP Relay settings |
 | `$RIRSA,<angle>,<status>,...` | `$IIRSA,<angle>,<status>,,V*XX` | Standard RSA format |
 | `$WIMWV` / `$IIMWV` with angle > 180° | Same sentence, angle rewritten as negative | ±180° signed convention |
 | Own-boat `!AIVDM`/`!AIVDO` | *dropped* | Detected via `$SLBID` boat-ID matching |

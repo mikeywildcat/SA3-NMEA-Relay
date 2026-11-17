@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 from PyQt6.QtCore import QCoreApplication, QSettings, Qt
-from PyQt6.QtGui import QAction, QIcon, QPixmap
+from PyQt6.QtGui import QAction, QColor, QIcon, QImage, QPixmap
 from PyQt6.QtWidgets import QMenu, QSystemTrayIcon
 
 from translations import tr
@@ -40,47 +40,59 @@ def _icon_path() -> Path:
     return base / "heelappicon.png"
 
 
-def _make_icon() -> QIcon:
+_BOAT_COLORS = {
+    "connected": QColor("#27d17f"),
+    "connecting": QColor("#ffc247"),
+    "disconnected": QColor("#ff5b64"),
+}
+_CLIENT_COLORS = {
+    False: QColor("#343a42"),
+    True: None,  # Preserve the existing blue background when a client is connected.
+}
+
+
+def _make_icon(sailaway_state: str, has_clients: bool) -> QIcon:
     path = _icon_path()
     if path.exists():
-        return QIcon(str(path))
+        source = QImage(str(path)).scaled(
+            128,
+            128,
+            Qt.AspectRatioMode.IgnoreAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        ).convertToFormat(QImage.Format.Format_ARGB32)
+        icon = QImage(source)
+        boat = _BOAT_COLORS.get(sailaway_state, _BOAT_COLORS["disconnected"])
+        background = _CLIENT_COLORS[has_clients]
+
+        for y in range(source.height()):
+            for x in range(source.width()):
+                pixel = source.pixelColor(x, y)
+                # Remove the black matte outside the rounded tile. This is
+                # transparent in tray icons so the menu bar shows through.
+                if max(pixel.red(), pixel.green(), pixel.blue()) <= 35:
+                    icon.setPixelColor(x, y, QColor(0, 0, 0, 0))
+                    continue
+
+                # The source icon uses a blue background and a white boat.
+                if pixel.green() < 55 or pixel.blue() < 75:
+                    continue
+                alpha = max(0.0, min(1.0, (pixel.red() - 58.0) / 197.0))
+                bg = background or pixel
+                icon.setPixelColor(
+                    x,
+                    y,
+                    QColor(
+                        round(bg.red() * (1.0 - alpha) + boat.red() * alpha),
+                        round(bg.green() * (1.0 - alpha) + boat.green() * alpha),
+                        round(bg.blue() * (1.0 - alpha) + boat.blue() * alpha),
+                        pixel.alpha(),
+                    ),
+                )
+        return QIcon(QPixmap.fromImage(icon))
     # Fallback: simple coloured square
     px = QPixmap(22, 22)
     px.fill(Qt.GlobalColor.transparent)
     return QIcon(px)
-
-
-def _set_dock_icon_visible(visible: bool) -> None:
-    """Show or hide the macOS Dock icon dynamically (no-op on other platforms)."""
-    if platform.system() != "Darwin":
-        return
-    try:
-        import ctypes
-        import ctypes.util
-        libobjc = ctypes.cdll.LoadLibrary(ctypes.util.find_library("objc"))
-
-        libobjc.objc_getClass.restype = ctypes.c_void_p
-        libobjc.objc_getClass.argtypes = [ctypes.c_char_p]
-        libobjc.sel_registerName.restype = ctypes.c_void_p
-        libobjc.sel_registerName.argtypes = [ctypes.c_char_p]
-
-        # Get NSApplication.sharedApplication (no extra args)
-        libobjc.objc_msgSend.restype = ctypes.c_void_p
-        libobjc.objc_msgSend.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
-        nsapp_cls = libobjc.objc_getClass(b"NSApplication")
-        nsapp = libobjc.objc_msgSend(
-            nsapp_cls, libobjc.sel_registerName(b"sharedApplication")
-        )
-
-        # setActivationPolicy: NSApplicationActivationPolicyRegular=0, Accessory=1
-        SetPolicyFunc = ctypes.CFUNCTYPE(
-            ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long
-        )
-        set_policy = SetPolicyFunc(libobjc.objc_msgSend)
-        set_policy(nsapp, libobjc.sel_registerName(b"setActivationPolicy:"),
-                   0 if visible else 1)
-    except Exception as exc:
-        _logger.debug("Could not change Dock visibility: %s", exc)
 
 
 # ---------------------------------------------------------------------------
@@ -93,6 +105,8 @@ class TrayManager:
     def __init__(self, window):
         self._window = window
         self._tray: QSystemTrayIcon | None = None
+        self._sailaway_state = "disconnected"
+        self._client_count = 0
 
         # Load tray-only preference
         _s = QSettings(_APP_NAME, _APP_NAME)
@@ -102,11 +116,18 @@ class TrayManager:
             _logger.warning("System tray is not available on this platform.")
             return
 
-        self._tray = QSystemTrayIcon(_make_icon())
-        self._tray.setToolTip(_DISPLAY_NAME)
+        self._tray = QSystemTrayIcon()
 
         self._menu = QMenu()
         menu = self._menu
+
+        self._act_sailaway_status = QAction(menu)
+        self._act_sailaway_status.setEnabled(False)
+        menu.addAction(self._act_sailaway_status)
+        self._act_client_status = QAction(menu)
+        self._act_client_status.setEnabled(False)
+        menu.addAction(self._act_client_status)
+        menu.addSeparator()
 
         # Show / Hide
         self._act_show = QAction(tr("tray_hide"))
@@ -132,7 +153,7 @@ class TrayManager:
         menu.addSeparator()
 
         # Help
-        self._act_help = QAction(tr("tray_help"))
+        self._act_help = QAction(tr("user_manual"))
         self._act_help.triggered.connect(self._on_help)
         menu.addAction(self._act_help)
 
@@ -145,11 +166,8 @@ class TrayManager:
 
         self._tray.setContextMenu(menu)
         self._tray.activated.connect(self._on_activated)
+        self.refresh_status()
         self._tray.show()
-
-        # Apply tray-only dock policy immediately if set
-        if self._tray_only:
-            _set_dock_icon_visible(False)
 
     # ------------------------------------------------------------------
     # Public helpers
@@ -160,6 +178,35 @@ class TrayManager:
 
     def is_tray_only(self) -> bool:
         return self._tray_only
+
+    def set_sailaway_state(self, state: str) -> None:
+        """Set the Sailaway link state: connected, connecting, or disconnected."""
+        self._sailaway_state = state if state in _BOAT_COLORS else "disconnected"
+        self.refresh_status()
+
+    def set_client_count(self, count: int) -> None:
+        """Set the number of connected relay clients."""
+        self._client_count = max(0, int(count))
+        self.refresh_status()
+
+    def refresh_status(self) -> None:
+        """Refresh the icon, tooltip, and menu summary from current states."""
+        if not self._tray:
+            return
+
+        sailaway_text = tr(f"tray_sailaway_{self._sailaway_state}")
+        client_text = tr("tray_client_count", n=self._client_count)
+        self._tray.setIcon(_make_icon(self._sailaway_state, self._client_count > 0))
+        self._tray.setToolTip(
+            tr("tray_status_tooltip", sailaway=sailaway_text, clients=self._client_count)
+        )
+        self._act_sailaway_status.setText(tr("tray_sailaway_status", status=sailaway_text))
+        self._act_client_status.setText(client_text)
+
+    def refresh_language(self) -> None:
+        """Refresh the tray's manual label after the app language changes."""
+        if self._tray:
+            self._act_help.setText(tr("user_manual"))
 
     def show_notification(self, title: str, msg: str) -> None:
         """Show a system notification if the tray is available."""
@@ -174,15 +221,11 @@ class TrayManager:
         """Call when the main window becomes visible."""
         if self._tray:
             self._act_show.setText(tr("tray_hide"))
-        if not self._tray_only:
-            _set_dock_icon_visible(True)
 
     def on_window_hidden(self):
         """Call when the main window is hidden to tray."""
         if self._tray:
             self._act_show.setText(tr("tray_show"))
-        if not self._tray_only:
-            _set_dock_icon_visible(False)
 
     def on_window_visibility_changed(self, visible: bool):
         """Legacy helper — delegates to on_window_shown/on_window_hidden."""
@@ -226,11 +269,6 @@ class TrayManager:
         self._tray_only = checked
         s = QSettings(_APP_NAME, _APP_NAME)
         s.setValue("app/trayOnlyMode", "true" if checked else "false")
-        if checked:
-            _set_dock_icon_visible(False)
-        else:
-            if self._window.isVisible():
-                _set_dock_icon_visible(True)
 
     def _on_toggle_login(self, checked: bool):
         try:

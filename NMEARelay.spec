@@ -15,17 +15,23 @@ from pathlib import Path
 
 block_cipher = None
 base_path = Path.cwd()
+pyqt6_package = Path(__import__("PyQt6").__file__).resolve().parent
+qt_platform_plugins = pyqt6_package / "Qt6" / "plugins" / "platforms"
+cocoa_plugin = qt_platform_plugins / "libqcocoa.dylib"
+if not cocoa_plugin.is_file():
+    raise FileNotFoundError(f"Qt Cocoa platform plugin not found: {cocoa_plugin}")
 
 a = Analysis(
     ["main.py"],
     pathex=[str(base_path)],
-    binaries=[],
+    binaries=[(str(cocoa_plugin), "PyQt6/Qt6/plugins/platforms")],
     datas=[("heelappicon.png", "."), ("help.html", "."), ("help_fr.html", "."), ("help_de.html", "."), ("help_nl.html", ".")],
     hiddenimports=[
         "PyQt6.QtCore",
         "PyQt6.QtGui",
         "PyQt6.QtWidgets",
         "PyQt6.sip",
+        "pkgutil",
         "tray_manager",
         "translations",
     ],
@@ -88,13 +94,14 @@ app = BUNDLE(
     name="SA3NMEARelay.app",
     icon="NMEARelay.icns",
     bundle_identifier="com.sa3companion.nmea-relay",
-    version="1.0.0",
+    version="1.0.5",
     info_plist={
         "CFBundleName": "SA3 NMEA Relay",
         "CFBundleDisplayName": "SA3 NMEA Relay",
-        "CFBundleShortVersionString": "1.0.0",
-        "CFBundleVersion": "1.0.0",
+        "CFBundleShortVersionString": "1.0.5",
+        "CFBundleVersion": "1.0.5",
         "NSPrincipalClass": "NSApplication",
+        "LSUIElement": True,
         "NSHighResolutionCapable": True,
         "LSMinimumSystemVersion": "11.0",
         # Network usage descriptions (required for Hardened Runtime)

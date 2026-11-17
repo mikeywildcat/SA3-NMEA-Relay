@@ -166,7 +166,7 @@
         <li>
           <div class="step-body">
             <div class="step-title">Démarrer le relais TCP</div>
-            <div class="step-desc">Passez à l'onglet <strong>Relais TCP</strong>. L'hôte est préréglé sur <code>0.0.0.0</code> et le port par défaut est <code>10111</code>. Cliquez sur <strong>Démarrer le relais</strong>.</div>
+            <div class="step-desc">Passez à l'onglet <strong>Relais TCP</strong>. L'hôte est préréglé sur <code>0.0.0.0</code> et le port par défaut est <code>10111</code>. Cliquez sur <strong>Démarrer le relais</strong>. Si l'inclinaison s'affiche dans le mauvais sens dans votre logiciel (certaines anciennes versions de qtVlm peuvent en avoir besoin), cochez <strong>Inverser le signe de l'inclinaison</strong> sous le port.</div>
           </div>
         </li>
         <li>
@@ -192,10 +192,10 @@
       <p><strong>Connecter</strong> ouvre le socket TCP vers Sailaway. En cas de succès, la barre de statut passe au vert. En cas d'échec, l'erreur s'affiche en rouge.</p>
       <p><strong>Déconnecter</strong> ferme proprement le socket. Le serveur relais continue de fonctionner.</p>
       <h3>Connexion automatique</h3>
-      <p>Lorsqu'elle est activée, l'application tente automatiquement de se connecter à chaque démarrage. Si Sailaway n'est pas encore lancé, elle réessaie silencieusement toutes les <strong>10 secondes</strong> jusqu'à la réussite.</p>
+      <p>Lorsqu'elle est activée, l'application tente automatiquement de se connecter à chaque démarrage. Si Sailaway n'est pas encore lancé, elle réessaie toutes les <strong>10 secondes</strong> jusqu'à la réussite. Si une connexion établie est interrompue de façon inattendue, ou si aucune phrase NMEA complète n'arrive pendant 10 secondes, une notification s'affiche et l'application réessaie toutes les 10 secondes jusqu'à la reconnexion. Désactivez Connexion automatique ou cliquez sur <strong>Déconnecter</strong> pour arrêter les tentatives.</p>
       <div class="info-box tip">
         <strong>Conseil</strong>
-        <span>Si la connexion se coupe de façon inattendue, une notification contextuelle vous demande de vérifier Sailaway et de vous reconnecter manuellement.</span>
+        <span>Une notification apparaît une seule fois lorsque la connexion est perdue, puis une autre confirme la reconnexion.</span>
       </div>
     </section>
 
@@ -203,6 +203,8 @@
       <h2>Onglet Relais TCP</h2>
       <h3>Hôte &amp; Port du relais</h3>
       <p><code>0.0.0.0</code> rend le relais accessible depuis n'importe quel appareil du réseau local. Utilisez <code>127.0.0.1</code> pour le restreindre à la machine locale. Le port par défaut est <code>10111</code>.</p>
+      <h3>Signe de l'inclinaison</h3>
+      <p>La case <strong>Inverser le signe de l'inclinaison</strong> se trouve juste sous le port du relais. Elle est désactivée par défaut. L'inversion transforme les valeurs positives en négatives et les négatives en positives, ce qui inverse la convention bâbord/tribord. Certaines anciennes versions de qtVlm peuvent en avoir besoin. Le réglage est mémorisé et peut être modifié pendant que le relais fonctionne ; survolez la case pour afficher son info-bulle.</p>
       <h3>Démarrer / Arrêter le relais</h3>
       <p><strong>Démarrer le relais</strong> ouvre le serveur d'écoute. Plusieurs logiciels de navigation peuvent se connecter simultanément — le nombre de clients est affiché.</p>
       <h3>Relais automatique</h3>
@@ -221,7 +223,7 @@
           <tr><th>Phrase d'entrée</th><th>Phrase de sortie</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td>$SLCLI</td><td>$IIXDR,A,…,D,ROLL</td><td>Angle de gîte Sailaway → phrase XDR standard. Le signe est inversé pour respecter la convention.</td></tr>
+          <tr><td>$SLCLI</td><td>$IIXDR,A,…,D,ROLL</td><td>Angle de gîte Sailaway → phrase XDR standard. L'inversion du signe est désactivée par défaut et peut être activée dans les paramètres du relais TCP.</td></tr>
           <tr><td>$RIRSA</td><td>$IIRSA</td><td>Angle de barre Sailaway → phrase RSA standard avec identifiant d'émetteur corrigé en <code>II</code>.</td></tr>
           <tr><td>$WIMWV</td><td>$WIMWV (corrigé)</td><td>Les valeurs d'angle de vent supérieures à 180° sont réécrites en valeurs négatives (±180° signés) pour la compatibilité avec OpenCPN.</td></tr>
           <tr><td>Phrases AIS VDM</td><td><em>(supprimées)</em></td><td>Les rapports de position AIS de votre propre bateau sont supprimés du flux pour qu'il n'apparaisse pas comme une cible AIS distincte.</td></tr>
@@ -236,10 +238,18 @@
     <section id="tray">
       <h2>Barre de menu &amp; Zone de notification</h2>
       <p>SA3 NMEA Relay réside dans la barre de menu macOS ou la zone de notification Windows. Fermer la fenêtre principale la masque plutôt que de quitter l'application — le relais continue de fonctionner en arrière-plan.</p>
+      <h3>Lire l’icône</h3>
+      <p>L’icône reprend le logo de l’application : la couleur du bateau indique l’état de la connexion Sailaway et le fond indique si un client du relais est connecté. Survolez l’icône ou ouvrez son menu pour voir le nombre exact de clients.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0 20px">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center"><svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Bateau vert, fond bleu"><rect x="2" y="2" width="60" height="60" rx="16" fill="#3899f9"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#27d17f"/></svg><div style="font-size:12px;color:var(--subtext)">Sailaway connecté · client connecté</div></div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center"><svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Bateau orange, fond bleu"><rect x="2" y="2" width="60" height="60" rx="16" fill="#3899f9"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#ffc247"/></svg><div style="font-size:12px;color:var(--subtext)">Connexion ou reconnexion Sailaway · client connecté</div></div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center"><svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Bateau rouge, fond bleu"><rect x="2" y="2" width="60" height="60" rx="16" fill="#3899f9"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#ff5b64"/></svg><div style="font-size:12px;color:var(--subtext)">Sailaway déconnecté · client connecté</div></div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center"><svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Bateau vert, fond gris anthracite"><rect x="2" y="2" width="60" height="60" rx="16" fill="#343a42"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#27d17f"/></svg><div style="font-size:12px;color:var(--subtext)">Sailaway connecté · aucun client connecté</div></div>
+      </div>
       <h3>Options du menu</h3>
       <ul style="list-style:disc;padding-left:20px;color:var(--subtext);font-size:13px;line-height:2">
         <li><strong style="color:var(--text)">Masquer / Afficher</strong> – affiche ou masque la fenêtre principale</li>
-        <li><strong style="color:var(--text)">Barre de menu / Zone de notif. uniquement</strong> – masque définitivement l'icône du Dock (macOS) ; la fenêtre démarre masquée à chaque lancement</li>
+        <li><strong style="color:var(--text)">Barre de menu / Zone de notif. uniquement</strong> – si cette option est cochée, la fenêtre démarre masquée à chaque lancement. Ce choix est mémorisé et prend effet au prochain démarrage ; utilisez <strong>Masquer / Afficher</strong> pour masquer ou afficher la fenêtre immédiatement. Sur macOS, l'icône du Dock reste masquée pendant l'exécution ; utilisez l'icône de la barre de menu pour afficher la fenêtre.</li>
         <li><strong style="color:var(--text)">Lancer au démarrage</strong> – voir ci-dessous</li>
         <li><strong style="color:var(--text)">Aide</strong> – ouvre ce manuel</li>
         <li><strong style="color:var(--text)">Quitter</strong> – ferme complètement l'application</li>
@@ -283,14 +293,14 @@
         <li>Assurez-vous que votre logiciel est configuré pour se connecter à <code>127.0.0.1</code> sur le port <code>10111</code>.</li>
         <li>Consultez la fenêtre de journal NMEA — si des phrases défilent, le relais reçoit bien des données.</li>
       </ul>
-      <h3>La notification « Connexion perdue » s'affiche répétitivement</h3>
+      <h3>La reconnexion automatique continue</h3>
       <ul style="list-style:disc;padding-left:20px;color:var(--subtext);font-size:13px;line-height:2">
-        <li>Cela indique que Sailaway ferme la connexion à la passerelle NMEA. Vérifiez que Sailaway est en cours d'exécution et que la passerelle est toujours activée.</li>
-        <li>Activez la connexion automatique pour que l'application se reconnecte automatiquement après le redémarrage de Sailaway.</li>
+        <li>Vérifiez que Sailaway est en cours d'exécution et que la passerelle NMEA est activée.</li>
+        <li>Désactivez Connexion automatique ou cliquez sur <strong>Déconnecter</strong> pour arrêter les tentatives.</li>
       </ul>
       <h3>L'icône du Dock ne disparaît pas (macOS)</h3>
       <ul style="list-style:disc;padding-left:20px;color:var(--subtext);font-size:13px;line-height:2">
-        <li>Activez <strong>Barre de menu / Zone de notif. uniquement</strong> depuis le menu contextuel de l'icône pour une utilisation permanente sans icône dans le Dock.</li>
+        <li>Quittez toute ancienne version et lancez l'application Mac mise à jour. Elle est configurée pour fonctionner depuis la barre de menu sans icône dans le Dock.</li>
       </ul>
       <div class="info-box note">
         <strong>Fenêtre de journal</strong>

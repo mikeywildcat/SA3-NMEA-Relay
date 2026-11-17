@@ -12,6 +12,7 @@ import json
 from PyQt6.QtCore import QSettings, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QComboBox,
+    QCheckBox,
     QFormLayout,
     QGridLayout,
     QGroupBox,
@@ -37,9 +38,11 @@ class ConnectionPanel(QWidget):
 
     connect_clicked = pyqtSignal(str, int)           # host, port
     disconnect_clicked = pyqtSignal()
+    auto_connect_changed = pyqtSignal(bool)
     tcp_relay_toggle = pyqtSignal(str, int)          # host, port
     tcp_relay_settings_changed = pyqtSignal(str, int)
     language_changed = pyqtSignal(str)               # lang code
+    user_manual_clicked = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -74,7 +77,8 @@ class ConnectionPanel(QWidget):
         self._refresh_toggle_texts()
 
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        self.setMinimumWidth(260)
+        # Keep enough room for form labels and the full connection values.
+        self.setMinimumWidth(360)
         self.setMaximumHeight(590)
 
     # ------------------------------------------------------------------
@@ -87,6 +91,8 @@ class ConnectionPanel(QWidget):
         # Host combo (editable, with history)
         self.host = QComboBox()
         self.host.setEditable(True)
+        self.host.setMinimumWidth(240)
+        self.host.lineEdit().setMinimumWidth(190)
         try:
             self.host.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         except Exception:
@@ -95,6 +101,8 @@ class ConnectionPanel(QWidget):
         # Port combo (editable, with history)
         self.port = QComboBox()
         self.port.setEditable(True)
+        self.port.setMinimumWidth(170)
+        self.port.lineEdit().setMinimumWidth(120)
         try:
             self.port.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         except Exception:
@@ -145,12 +153,16 @@ class ConnectionPanel(QWidget):
         self._conn_help_lbl.setText(tr("connection_help"))
         form.addRow("", self._conn_help_lbl)
 
+        self.btn_user_manual = QPushButton(tr("user_manual"))
+        form.addRow("", self.btn_user_manual)
+
         self._rebuild_button_grid(force=True)
 
         # Signals
         self.btn_connect.clicked.connect(self._on_connect)
         self.btn_disconnect.clicked.connect(self.disconnect_clicked.emit)
         self.btn_clear_history.clicked.connect(self._on_clear_history)
+        self.btn_user_manual.clicked.connect(self.user_manual_clicked.emit)
         self.chk_auto.toggled.connect(self._on_auto_toggled)
 
         return tab
@@ -165,12 +177,22 @@ class ConnectionPanel(QWidget):
 
         self.tcp_host_input = QLineEdit("0.0.0.0")
         self.tcp_host_input.setPlaceholderText("0.0.0.0  (all interfaces)")
+        self.tcp_host_input.setMinimumWidth(250)
         settings_form.addRow(tr("relay_listen_host"), self.tcp_host_input)
 
         self.tcp_port_input = QSpinBox()
         self.tcp_port_input.setRange(1024, 65535)
         self.tcp_port_input.setValue(10111)
+        self.tcp_port_input.setMinimumWidth(170)
         settings_form.addRow(tr("relay_port"), self.tcp_port_input)
+
+        self.chk_invert_heel = QCheckBox(tr("invert_heel_sign"))
+        self.chk_invert_heel.setToolTip(tr("invert_heel_sign_tooltip"))
+        self.chk_invert_heel.setStyleSheet(
+            "QCheckBox { font-size: 11pt; font-weight: 600; spacing: 7px; }"
+            "QCheckBox::indicator { width: 16px; height: 16px; }"
+        )
+        settings_form.addRow("", self.chk_invert_heel)
 
         g_layout.addLayout(settings_form)
 
@@ -220,23 +242,25 @@ class ConnectionPanel(QWidget):
     def update_tcp_relay_status(self, active: bool, message: str = ""):
         if active:
             self.tcp_relay_btn.setText(tr("btn_stop_relay"))
-            self.tcp_relay_btn.setStyleSheet("background-color: #51cf66;")
+            self.tcp_relay_btn.setStyleSheet(
+                "background-color: #254f7a; border-color: #0a84ff; color: #ffffff;"
+            )
             self.tcp_host_input.setEnabled(False)
             self.tcp_port_input.setEnabled(False)
             if message:
                 self.tcp_status_label.setText(message)
-                self.tcp_status_label.setStyleSheet("color: #51cf66; font-size: 9pt;")
+                self.tcp_status_label.setStyleSheet("color: #63d489; font-size: 9pt;")
         else:
             self.tcp_relay_btn.setText(tr("btn_start_relay"))
             self.tcp_relay_btn.setStyleSheet("")
             self.tcp_host_input.setEnabled(True)
             self.tcp_port_input.setEnabled(True)
             self.tcp_status_label.setText(message or tr("relay_inactive"))
-            self.tcp_status_label.setStyleSheet("color: #888; font-size: 9pt;")
+            self.tcp_status_label.setStyleSheet("color: #a6a7aa; font-size: 9pt;")
 
     def update_tcp_relay_error(self, error_msg: str):
         self.tcp_status_label.setText(f"Error: {error_msg}")
-        self.tcp_status_label.setStyleSheet("color: #ff6b6b; font-size: 9pt;")
+        self.tcp_status_label.setStyleSheet("color: #ff6961; font-size: 9pt;")
 
     def update_tcp_client_count(self, count: int):
         self.tcp_clients_label.setText(tr("relay_clients", n=count))
@@ -285,8 +309,11 @@ class ConnectionPanel(QWidget):
         self.btn_disconnect.setText(tr("btn_disconnect"))
         self.btn_clear_history.setText(tr("btn_clear_history"))
         self._conn_help_lbl.setText(tr("connection_help"))
+        self.btn_user_manual.setText(tr("user_manual"))
         self._relay_group.setTitle(tr("relay_group"))
         self.chk_auto_relay.setToolTip(tr("auto_relay_tooltip"))
+        self.chk_invert_heel.setText(tr("invert_heel_sign"))
+        self.chk_invert_heel.setToolTip(tr("invert_heel_sign_tooltip"))
         self.tcp_status_label.setText(tr("relay_inactive"))
         self._relay_help_lbl.setText(tr("relay_help"))
         self._refresh_toggle_texts()
@@ -304,11 +331,18 @@ class ConnectionPanel(QWidget):
 
     def _on_auto_toggled(self, checked: bool):
         self.chk_auto.setText(tr("auto_connect_on") if checked else tr("auto_connect"))
+        s = QSettings(_SETTINGS_ORG, _SETTINGS_APP)
+        s.setValue("network/autoConnect", "true" if checked else "false")
+        self.auto_connect_changed.emit(checked)
 
     def _on_auto_relay_toggled(self, checked: bool):
         self.chk_auto_relay.setText(tr("auto_relay_on") if checked else tr("auto_relay"))
         s = QSettings(_SETTINGS_ORG, _SETTINGS_APP)
         s.setValue("relay/autoRelay", "true" if checked else "false")
+
+    def _on_heel_sign_toggled(self, checked: bool):
+        s = QSettings(_SETTINGS_ORG, _SETTINGS_APP)
+        s.setValue("relay/invertHeelSign", "true" if checked else "false")
 
     def _refresh_toggle_texts(self):
         self.chk_auto.setText(
@@ -465,6 +499,10 @@ class ConnectionPanel(QWidget):
         except Exception:
             self.tcp_port_input.setValue(10111)
 
+        val = str(s.value("relay/invertHeelSign", "false")).strip().lower()
+        self.chk_invert_heel.setChecked(val in ("true", "1", "yes", "on"))
+        self.chk_invert_heel.toggled.connect(self._on_heel_sign_toggled)
+
         val = str(s.value("relay/autoRelay", "false")).strip().lower()
         self.chk_auto_relay.setChecked(val in ("true", "1", "yes", "on"))
 
@@ -490,74 +528,101 @@ class ConnectionPanel(QWidget):
         self.setStyleSheet(
             """
             QWidget {
-                background-color: #1e1e2e;
-                color: #cdd6f4;
+                background-color: #25272a;
+                color: #f2f2f3;
                 font-family: "Helvetica Neue", Arial, sans-serif;
                 font-size: 10pt;
             }
             QTabWidget::pane {
-                border: 1px solid #45475a;
-                border-radius: 4px;
+                background: #222427;
+                border: 1px solid #414348;
+                border-radius: 8px;
+                top: -1px;
             }
             QTabBar::tab {
-                background: #313244;
-                color: #bac2de;
-                padding: 6px 14px;
-                border-radius: 4px 4px 0 0;
-                margin-right: 2px;
+                background: #34363a;
+                color: #b9b9bc;
+                border: 1px solid #484a4e;
+                border-bottom: none;
+                border-top-left-radius: 7px;
+                border-top-right-radius: 7px;
+                padding: 9px 17px;
+                min-width: 74px;
+                margin-right: 5px;
             }
             QTabBar::tab:selected {
-                background: #1e1e2e;
-                color: #cba6f7;
+                background: #4a4d52;
+                color: #ffffff;
+                border: 1px solid #6b6e73;
+                border-bottom: 1px solid #4a4d52;
+                border-top: 3px solid #0a84ff;
+            }
+            QTabBar::tab:hover:!selected {
+                background: #414348;
+                color: #f1f1f2;
             }
             QComboBox, QLineEdit, QSpinBox {
-                background-color: #313244;
-                border: 1px solid #45475a;
-                border-radius: 4px;
-                padding: 4px 8px;
-                color: #cdd6f4;
+                background-color: #1b1c1f;
+                border: 1px solid #484a4e;
+                border-radius: 7px;
+                padding: 6px 9px;
+                color: #f2f2f3;
             }
             QComboBox:focus, QLineEdit:focus, QSpinBox:focus {
-                border-color: #cba6f7;
+                border: 1px solid #0a84ff;
+            }
+            QComboBox QAbstractItemView {
+                background: #2b2d31;
+                color: #f2f2f3;
+                selection-background-color: #0a84ff;
+                selection-color: #ffffff;
+                border: 1px solid #484a4e;
             }
             QPushButton {
-                background-color: #45475a;
-                border: 1px solid #585b70;
-                border-radius: 6px;
-                padding: 5px 10px;
-                color: #cdd6f4;
+                background-color: #393b3f;
+                border: 1px solid #4d4f53;
+                border-radius: 9px;
+                padding: 7px 11px;
+                color: #f2f2f3;
             }
-            QPushButton:hover { background-color: #585b70; }
-            QPushButton:pressed { background-color: #313244; }
+            QPushButton:hover { background-color: #484a4f; border-color: #686a6f; }
+            QPushButton:pressed { background-color: #292b2f; }
             QPushButton[primary="true"] {
-                background-color: #89b4fa;
-                color: #1e1e2e;
+                background-color: #0a84ff;
+                color: #ffffff;
                 font-weight: bold;
                 border: none;
             }
-            QPushButton[primary="true"]:hover { background-color: #b4befe; }
+            QPushButton[primary="true"]:hover { background-color: #3194ff; }
             QPushButton[pill="true"] {
-                border-radius: 10px;
-                padding: 4px 14px;
+                border-radius: 14px;
+                padding: 6px 14px;
             }
             QPushButton[pill="true"]:checked {
-                background-color: #a6e3a1;
-                color: #1e1e2e;
+                background-color: #0a84ff;
+                color: #ffffff;
                 border: none;
             }
             QGroupBox {
-                border: 1px solid #45475a;
-                border-radius: 6px;
+                background: #242629;
+                border: 1px solid #414348;
+                border-radius: 9px;
                 margin-top: 10px;
-                padding-top: 6px;
+                padding: 8px 7px 7px 7px;
                 font-weight: bold;
-                color: #a6adc8;
+                color: #dedee0;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 4px;
+                left: 12px;
+                padding: 0 6px;
+                color: #e6e6e8;
             }
-            QLabel { color: #cdd6f4; }
+            QCheckBox { color: #f2f2f3; spacing: 8px; }
+            QLabel { color: #ededee; }
+            QScrollBar:vertical { background: #222427; width: 11px; margin: 2px; }
+            QScrollBar::handle:vertical { background: #515358; min-height: 24px; border-radius: 5px; }
+            QScrollBar::handle:vertical:hover { background: #696b70; }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
             """
         )

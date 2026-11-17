@@ -366,7 +366,9 @@
               Switch to the <strong>TCP Relay</strong> tab. The relay host is preset to
               <code>0.0.0.0</code> (accepts connections from any device on your network) and the
               port defaults to <code>10111</code>. Click <strong>Start Relay</strong>. The status
-              line will confirm how many clients are connected.
+              line will confirm how many clients are connected. If heel is displayed in the wrong
+              direction in your navigation app (some older qtVlm versions may need this), select
+              <strong>Invert heel sign</strong> below the port.
             </div>
           </div>
         </li>
@@ -417,14 +419,16 @@
       <h3>Auto Connect</h3>
       <p>
         When enabled, the app automatically tries to connect using the last saved host and port
-        every time it starts. If Sailaway is not yet running it will silently retry every
-        <strong>10 seconds</strong> until the connection succeeds — useful when combined with
-        Start at Login.
+        every time it starts. If Sailaway is not yet running, it retries every
+        <strong>10 seconds</strong> until the connection succeeds. If an established connection
+        drops unexpectedly, or no complete NMEA sentence arrives for 10 seconds, the app displays
+        a notification and retries every 10 seconds until it reconnects. Turning Auto Connect off,
+        or clicking <strong>Disconnect</strong>, stops retries.
       </p>
       <div class="info-box tip">
         <strong>Tip</strong>
-        <span>If the connection drops unexpectedly (Sailaway closed, network hiccup) a pop-up
-        notification will appear asking you to check Sailaway and reconnect manually.</span>
+        <span>Auto Connect can be enabled or disabled at any time. The app sends one notification
+        when an established connection is lost, then notifies you again when it reconnects.</span>
       </div>
     </section>
 
@@ -436,6 +440,14 @@
         <code>0.0.0.0</code> makes the relay accessible from any device on your local network.
         Change to <code>127.0.0.1</code> to restrict it to the local machine only.
         The default port is <code>10111</code>.
+      </p>
+      <h3>Heel Sign</h3>
+      <p>
+        The <strong>Invert heel sign</strong> checkbox is directly below the relay port. It is
+        disabled by default. Enable it to reverse the sign of Sailaway heel values in the outgoing
+        XDR sentence: positive values become negative and negative values become positive, switching
+        the port/starboard convention. Some older qtVlm versions may need this enabled. The setting
+        is saved and can be changed while the relay is running; hover over the checkbox for a tooltip.
       </p>
       <h3>Start / Stop Relay</h3>
       <p>
@@ -474,7 +486,7 @@
           <tr>
             <td>$SLCLI</td>
             <td>$IIXDR,A,…,D,ROLL</td>
-            <td>Sailaway heel angle → standard XDR transducer sentence. Sign is inverted to match convention.</td>
+            <td>Sailaway heel angle → standard XDR transducer sentence. Sign inversion is off by default and can be enabled in TCP Relay settings.</td>
           </tr>
           <tr>
             <td>$RIRSA</td>
@@ -507,12 +519,34 @@
         SA3 NMEA Relay lives in the macOS menu bar or the Windows system tray. Closing the main
         window hides it rather than quitting — the relay keeps running in the background.
       </p>
+      <h3>Reading the tray icon</h3>
+      <p>The icon reuses the app logo: the boat color shows Sailaway connection status, and the tile background shows whether any relay client is connected. Hover over the icon or open its menu to see the exact client count.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0 20px">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+          <svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Green boat on blue background"><rect x="2" y="2" width="60" height="60" rx="16" fill="#3899f9"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#27d17f"/></svg>
+          <div style="font-size:12px;color:var(--subtext)">Sailaway connected · client connected</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+          <svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Amber boat on blue background"><rect x="2" y="2" width="60" height="60" rx="16" fill="#3899f9"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#ffc247"/></svg>
+          <div style="font-size:12px;color:var(--subtext)">Sailaway connecting or reconnecting · client connected</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+          <svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Red boat on blue background"><rect x="2" y="2" width="60" height="60" rx="16" fill="#3899f9"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#ff5b64"/></svg>
+          <div style="font-size:12px;color:var(--subtext)">Sailaway disconnected · client connected</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+          <svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Green boat on charcoal background"><rect x="2" y="2" width="60" height="60" rx="16" fill="#343a42"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#27d17f"/></svg>
+          <div style="font-size:12px;color:var(--subtext)">Sailaway connected · no client connected</div>
+        </div>
+      </div>
       <h3>Tray menu options</h3>
       <ul style="list-style:disc;padding-left:20px;color:var(--subtext);font-size:13px;line-height:2">
         <li><strong style="color:var(--text)">Hide / Show</strong> – toggles the main window</li>
         <li><strong style="color:var(--text)">Menu Bar / Tray Only</strong> – when checked, the
-            Dock icon (macOS) is permanently hidden and the window starts hidden on every launch.
-            The tray icon is then the only way to access the app.</li>
+            window starts hidden on every launch. This preference is saved and takes effect the
+            next time the app starts; use <strong>Hide / Show</strong> to hide or reveal the window
+            now. On macOS, the Dock icon stays hidden while the app is running; use the menu bar
+            icon to show the window.</li>
         <li><strong style="color:var(--text)">Start at Login</strong> – see below</li>
         <li><strong style="color:var(--text)">Help</strong> – opens this manual</li>
         <li><strong style="color:var(--text)">Quit</strong> – exits the app completely</li>
@@ -590,14 +624,14 @@
         <li>Ensure your navigation app is configured to connect to <code>127.0.0.1</code> on port <code>10111</code> (or the port you configured).</li>
         <li>Check the NMEA log window — if sentences are scrolling, the relay is receiving data.</li>
       </ul>
-      <h3>Connection Lost pop-up appears repeatedly</h3>
+      <h3>Connection keeps retrying</h3>
       <ul style="list-style:disc;padding-left:20px;color:var(--subtext);font-size:13px;line-height:2">
-        <li>This indicates Sailaway is closing the NMEA gateway connection. Check that Sailaway is running and the gateway is still enabled.</li>
-        <li>Enable Auto Connect so the app reconnects automatically after you restart Sailaway.</li>
+        <li>Check that Sailaway is running and the NMEA Gateway is enabled.</li>
+        <li>Turn off Auto Connect or click <strong>Disconnect</strong> to stop automatic retries.</li>
       </ul>
       <h3>Dock icon does not disappear on macOS</h3>
       <ul style="list-style:disc;padding-left:20px;color:var(--subtext);font-size:13px;line-height:2">
-        <li>Enable <strong>Menu Bar / Tray Only</strong> from the menu bar icon's context menu for permanent dock-less operation.</li>
+        <li>Quit any older copy and launch the updated Mac app. It is configured to run from the menu bar without a Dock icon.</li>
       </ul>
       <div class="info-box note">
         <strong>Log window</strong>

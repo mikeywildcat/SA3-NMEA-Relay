@@ -33,12 +33,17 @@ def nmea_checksum(body: str) -> str:
     return f"{chk:02X}"
 
 
-def correct_sentence(sentence: str, own_boat_id: str | None = None) -> str | None:
+def correct_sentence(
+    sentence: str,
+    own_boat_id: str | None = None,
+    invert_heel: bool = False,
+) -> str | None:
     """Return a corrected/standardised NMEA sentence, or None to drop it.
 
     Args:
         sentence: Raw NMEA line received from Sailaway (may or may not have checksum).
         own_boat_id: Sailaway boat ID (e.g. "6246") used to filter own-boat AIS sentences.
+        invert_heel: Whether to invert the sign when converting Sailaway heel data.
 
     Returns:
         Corrected sentence string (with CRLF), or None if the sentence should be dropped.
@@ -53,7 +58,7 @@ def correct_sentence(sentence: str, own_boat_id: str | None = None) -> str | Non
 
     # --- Proprietary sentence conversions ---
     if line.startswith("$SLCLI"):
-        return _convert_slcli_to_xdr(line)
+        return _convert_slcli_to_xdr(line, invert_heel)
 
     if line.startswith("$RIRSA"):
         return _convert_rirsa_to_rsa(line)
@@ -83,15 +88,15 @@ def _build_sentence(body_with_dollar: str) -> str:
     return f"{body_with_dollar}*{nmea_checksum(body)}\r\n"
 
 
-def _convert_slcli_to_xdr(line: str) -> str:
-    """$SLCLI,<heel> → $IIXDR,A,<heel_inverted>,D,ROLL*XX"""
+def _convert_slcli_to_xdr(line: str, invert_heel: bool = False) -> str:
+    """$SLCLI,<heel> → $IIXDR,A,<heel>,D,ROLL*XX, optionally inverting sign."""
     try:
         raw = _strip_checksum(line)
         parts = raw.split(",")
         if len(parts) < 2:
             return line + "\r\n"
         heel_sa = float(parts[1])
-        heel_nmea = -heel_sa  # invert Sailaway sign convention
+        heel_nmea = -heel_sa if invert_heel else heel_sa
         body = f"$IIXDR,A,{heel_nmea:.1f},D,ROLL"
         return _build_sentence(body)
     except Exception as exc:

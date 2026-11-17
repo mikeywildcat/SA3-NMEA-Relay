@@ -166,7 +166,7 @@
         <li>
           <div class="step-body">
             <div class="step-title">TCP-relay starten</div>
-            <div class="step-desc">Ga naar het tabblad <strong>TCP-relay</strong>. De host is ingesteld op <code>0.0.0.0</code> en de standaardpoort is <code>10111</code>. Klik op <strong>Relay starten</strong>.</div>
+            <div class="step-desc">Ga naar het tabblad <strong>TCP-relay</strong>. De host is ingesteld op <code>0.0.0.0</code> en de standaardpoort is <code>10111</code>. Klik op <strong>Relay starten</strong>. Als de hellingshoek in uw navigatiesoftware de verkeerde kant op wordt weergegeven (oudere versies van qtVlm hebben dit mogelijk nodig), vink dan onder de poort <strong>Teken van helling omkeren</strong> aan.</div>
           </div>
         </li>
         <li>
@@ -192,10 +192,10 @@
       <p><strong>Verbinden</strong> opent de TCP-socket naar Sailaway. Bij succes wordt de statusbalk groen. Bij een fout wordt deze in rood weergegeven.</p>
       <p><strong>Verbreken</strong> sluit de socket netjes. De relay-server blijft draaien.</p>
       <h3>Automatisch verbinden</h3>
-      <p>Wanneer ingeschakeld, probeert de app bij elke start automatisch verbinding te maken. Als Sailaway nog niet actief is, worden elke <strong>10 seconden</strong> stille pogingen herhaald totdat de verbinding slaagt.</p>
+      <p>Wanneer ingeschakeld, probeert de app bij elke start automatisch verbinding te maken. Als Sailaway nog niet actief is, probeert de app elke <strong>10 seconden</strong> opnieuw totdat de verbinding slaagt. Als een bestaande verbinding onverwacht wegvalt of er 10 seconden lang geen volledige NMEA-zin binnenkomt, verschijnt er een melding en probeert de app elke 10 seconden opnieuw verbinding te maken. Schakel Automatisch verbinden uit of klik op <strong>Verbreken</strong> om pogingen te stoppen.</p>
       <div class="info-box tip">
         <strong>Tip</strong>
-        <span>Als de verbinding onverwacht wegvalt, verschijnt er een pop-upmelding die u vraagt Sailaway te controleren en handmatig opnieuw verbinding te maken.</span>
+        <span>Bij verbindingsverlies verschijnt één melding. Zodra de verbinding is hersteld, krijgt u opnieuw een melding.</span>
       </div>
     </section>
 
@@ -203,6 +203,8 @@
       <h2>Tabblad TCP-relay</h2>
       <h3>Relay-host &amp; Poort</h3>
       <p><code>0.0.0.0</code> maakt de relay toegankelijk vanaf elk apparaat in uw lokale netwerk. Wijzig naar <code>127.0.0.1</code> om het te beperken tot de lokale machine. De standaardpoort is <code>10111</code>.</p>
+      <h3>Tekens van de hellingshoek</h3>
+      <p>Het selectievakje <strong>Teken van helling omkeren</strong> staat direct onder de relaypoort en is standaard uitgeschakeld. Positieve waarden worden hierdoor negatief en negatieve waarden positief; de bakboord-/stuurboordconventie draait dus om. Oudere versies van qtVlm hebben dit mogelijk nodig. De instelling wordt opgeslagen en kan worden gewijzigd terwijl de relay actief is. Beweeg de muisaanwijzer over het selectievakje voor de tooltip.</p>
       <h3>Relay starten / stoppen</h3>
       <p><strong>Relay starten</strong> opent de luisterende server. Meerdere navigatie-apps kunnen tegelijkertijd verbinding maken — het aantal clients wordt weergegeven.</p>
       <h3>Automatische relay</h3>
@@ -221,7 +223,7 @@
           <tr><th>Invoerzin</th><th>Uitvoerzin</th><th>Beschrijving</th></tr>
         </thead>
         <tbody>
-          <tr><td>$SLCLI</td><td>$IIXDR,A,…,D,ROLL</td><td>Sailaway-helhoek → standaard XDR-transducerzin. Het teken wordt omgekeerd om de conventie te volgen.</td></tr>
+          <tr><td>$SLCLI</td><td>$IIXDR,A,…,D,ROLL</td><td>Sailaway-helhoek → standaard XDR-transducerzin. Het omkeren van het teken staat standaard uit en kan worden ingeschakeld bij de TCP-relayinstellingen.</td></tr>
           <tr><td>$RIRSA</td><td>$IIRSA</td><td>Sailaway-roerhoek → standaard RSA-zin met gecorrigeerde talker-ID <code>II</code>.</td></tr>
           <tr><td>$WIMWV</td><td>$WIMWV (gecorrigeerd)</td><td>Windhoekwaarden boven 180° worden herschreven als negatieve waarden (±180° met teken) voor compatibiliteit met OpenCPN.</td></tr>
           <tr><td>AIS VDM-zinnen</td><td><em>(verwijderd)</em></td><td>AIS-positiemeldingen van uw eigen boot worden uit de stroom verwijderd zodat uw vaartuig niet als apart AIS-doel verschijnt.</td></tr>
@@ -236,10 +238,18 @@
     <section id="tray">
       <h2>Menubalk &amp; Systeemvak</h2>
       <p>SA3 NMEA Relay bevindt zich in de macOS-menubalk of het Windows-systeemvak. Het sluiten van het hoofdvenster verbergt het in plaats van de app te beëindigen — de relay blijft op de achtergrond draaien.</p>
+      <h3>Het pictogram lezen</h3>
+      <p>Het pictogram gebruikt het bestaande app-logo: de kleur van de boot geeft de Sailaway-verbindingsstatus aan en de achtergrond laat zien of er een relay-client verbonden is. Beweeg de aanwijzer over het pictogram of open het menu voor het exacte aantal clients.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0 20px">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center"><svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Groene boot op blauwe achtergrond"><rect x="2" y="2" width="60" height="60" rx="16" fill="#3899f9"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#27d17f"/></svg><div style="font-size:12px;color:var(--subtext)">Sailaway verbonden · client verbonden</div></div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center"><svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Oranje boot op blauwe achtergrond"><rect x="2" y="2" width="60" height="60" rx="16" fill="#3899f9"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#ffc247"/></svg><div style="font-size:12px;color:var(--subtext)">Sailaway maakt verbinding of verbindt opnieuw · client verbonden</div></div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center"><svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Rode boot op blauwe achtergrond"><rect x="2" y="2" width="60" height="60" rx="16" fill="#3899f9"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#ff5b64"/></svg><div style="font-size:12px;color:var(--subtext)">Sailaway verbroken · client verbonden</div></div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center"><svg viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="Groene boot op antracietgrijze achtergrond"><rect x="2" y="2" width="60" height="60" rx="16" fill="#343a42"/><path d="M34 11 22 34 34 39Z M36 13 48 36 36 42Z M15 34 48 47Q34 49 25 44Q17 41 15 34Z M10 51Q20 47 30 51T50 51T59 51" fill="#27d17f"/></svg><div style="font-size:12px;color:var(--subtext)">Sailaway verbonden · geen client verbonden</div></div>
+      </div>
       <h3>Menuopties</h3>
       <ul style="list-style:disc;padding-left:20px;color:var(--subtext);font-size:13px;line-height:2">
         <li><strong style="color:var(--text)">Verbergen / Tonen</strong> – schakelt het hoofdvenster in of uit</li>
-        <li><strong style="color:var(--text)">Alleen menubalk / systeemvak</strong> – verbergt het Dock-pictogram (macOS) permanent; het venster start verborgen bij elke lancering</li>
+        <li><strong style="color:var(--text)">Alleen menubalk / systeemvak</strong> – als dit is ingeschakeld, start het venster bij elke start verborgen. Deze voorkeur wordt opgeslagen en geldt vanaf de volgende keer dat u de app start; gebruik <strong>Verbergen / Tonen</strong> om het venster nu te verbergen of weer te tonen. In macOS blijft het Dock-pictogram verborgen zolang de app actief is; gebruik het menubalkpictogram om het venster te tonen.</li>
         <li><strong style="color:var(--text)">Starten bij aanmelding</strong> – zie hieronder</li>
         <li><strong style="color:var(--text)">Help</strong> – opent deze handleiding</li>
         <li><strong style="color:var(--text)">Afsluiten</strong> – sluit de app volledig af</li>
@@ -283,14 +293,14 @@
         <li>Zorg ervoor dat uw app is geconfigureerd om verbinding te maken met <code>127.0.0.1</code> op poort <code>10111</code>.</li>
         <li>Bekijk het NMEA-logvenster — als zinnen scrollen, ontvangt de relay gegevens.</li>
       </ul>
-      <h3>Pop-up "Verbinding verbroken" verschijnt herhaaldelijk</h3>
+      <h3>Automatische verbindingspogingen blijven doorgaan</h3>
       <ul style="list-style:disc;padding-left:20px;color:var(--subtext);font-size:13px;line-height:2">
-        <li>Dit geeft aan dat Sailaway de NMEA-gateway-verbinding sluit. Controleer of Sailaway actief is en de gateway nog steeds is ingeschakeld.</li>
-        <li>Schakel Automatisch verbinden in zodat de app automatisch opnieuw verbinding maakt nadat u Sailaway opnieuw start.</li>
+        <li>Controleer of Sailaway actief is en de NMEA-gateway is ingeschakeld.</li>
+        <li>Schakel Automatisch verbinden uit of klik op <strong>Verbreken</strong> om pogingen te stoppen.</li>
       </ul>
       <h3>Dock-pictogram verdwijnt niet (macOS)</h3>
       <ul style="list-style:disc;padding-left:20px;color:var(--subtext);font-size:13px;line-height:2">
-        <li>Schakel <strong>Alleen menubalk / systeemvak</strong> in via het contextmenu van het tray-pictogram voor permanent gebruik zonder Dock-pictogram.</li>
+        <li>Sluit oudere versies af en start de bijgewerkte Mac-app. Deze is ingesteld om vanuit de menubalk te werken zonder Dock-pictogram.</li>
       </ul>
       <div class="info-box note">
         <strong>Logvenster</strong>
