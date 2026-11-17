@@ -4,14 +4,11 @@ from __future__ import annotations
 
 import logging
 import socket
-import time
 
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 TCP_READ_BUFFER_SIZE = 4096
 _MAX_BUF_SIZE = 65536  # 64 KB — drop buffer if no newline found within this limit
-DATA_INACTIVITY_TIMEOUT = 10.0  # reconnect if no complete NMEA sentence arrives
-
 _logger = logging.getLogger(__name__)
 
 
@@ -39,7 +36,6 @@ class TcpWorker(QObject):
             self._sock.settimeout(1.0)
             self.connected.emit()
             buf = b""
-            last_sentence_at = time.monotonic()
             while self._running:
                 try:
                     data = self._sock.recv(TCP_READ_BUFFER_SIZE)
@@ -57,17 +53,8 @@ class TcpWorker(QObject):
                         raw, buf = buf.split(b"\n", 1)
                         s = raw.strip().decode(errors="ignore")
                         if s:
-                            last_sentence_at = time.monotonic()
                             self.line.emit(s)
                 except socket.timeout:
-                    if time.monotonic() - last_sentence_at >= DATA_INACTIVITY_TIMEOUT:
-                        message = (
-                            "No complete NMEA sentence received for "
-                            f"{DATA_INACTIVITY_TIMEOUT:g} seconds"
-                        )
-                        _logger.warning("%s from %s:%d", message, self.host, self.port)
-                        self.error.emit(message)
-                        break
                     continue
         except Exception as e:
             self.error.emit(str(e))
