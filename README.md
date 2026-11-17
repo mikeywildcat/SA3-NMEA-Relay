@@ -1,5 +1,7 @@
 # SA3 NMEA Relay
 
+![SA3 NMEA Relay application screenshot](image.png)
+
 User manual · Sailaway 3 NMEA Gateway Bridge
 
 ## What is SA3 NMEA Relay?
